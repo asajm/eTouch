@@ -280,24 +280,33 @@ class eTouch_Incident(eTouch):
             return int(text.split(' of ')[1])
         
     def get_incident_list(self):
-        num_ticket = self.get_num_tickets()
-        if((num_ticket > 25) & (num_ticket < 500)):
-            self.browser.execute_script('navigate_list_all()')
-            if(self.is_alert_present()):
-                alert = self.browser.switch_to.alert
-                alert.accept()
-        elif(num_ticket >= 500):
-            print('** must go with pagination because number of incident more than 500')
-        
         self._open_frame__cai_main()
-        _df = pd.read_html(self.browser.page_source)[15]
-        _df.drop(_df.columns[0], axis=1, inplace=True)
-        _df = _df[~_df['Incident #'].isna()]
-        _df['Incident #'] = _df['Incident #'].astype(str)
-        _df['Violated'] = _df['Incident #'].str.contains('\*\*')==True
-        _df['Incident #'] = _df['Incident #'].str.extract('(\d+)')
+        try:
+            elm_td = self.browser.find_element_by_id('dataGrid_toppager_center')
+            pages = int(elm_td.find_element_by_id('sp_1_dataGrid_toppager').text)
+        except:
+            pages = 1
 
-        return _df
+        df = pd.DataFrame()
+        for i in range(pages):
+            self.wait.until(EC.visibility_of_element_located((By.ID, 'dataGrid')))
+            table = self.browser.find_element_by_id('dataGrid')
+            _df = pd.read_html(table.get_attribute("outerHTML"))[0]
+            _df.drop(_df.columns[0], axis=1, inplace=True)
+            _df = _df[~_df['Incident #'].isna()]
+            _df['Incident #'] = _df['Incident #'].astype(str)
+            _df['Violated'] = _df['Incident #'].str.contains('\*\*')==True
+            _df['Incident #'] = _df['Incident #'].str.extract('(\d+)')
+            df = df.append(_df)
+
+            if(pages > 1):
+                elm = self.browser.find_element_by_id('dataGrid_toppager_center').find_element_by_id('next_t_dataGrid_toppager')
+                if('ui-state-disabled' not in elm.get_attribute('class').split()):
+                    elm.click()
+                else:
+                    break
+
+        return df
 
     def search_incident(self, ticket_num):
         self._select_ticket_type_gobtn("Incident")
@@ -377,24 +386,33 @@ class eTouch_CO(eTouch):
             return int(text.split(' of ')[1])
 
     def get_CO_list(self):
-        num_ticket = self.get_num_tickets()
-        if((num_ticket > 25) & (num_ticket < 500)):
-            self.browser.execute_script('navigate_list_all()')
-            if(self.is_alert_present()):
-                alert = self.browser.switch_to.alert
-                alert.accept()
-        elif(num_ticket >= 500):
-            print('** must go with pagination because number of incident more than 500')
-        
         self._open_frame__cai_main()
-        _df = pd.read_html(self.browser.page_source)[15]
-        _df.drop(_df.columns[0], axis=1, inplace=True)
-        _df = _df[~_df['Incident #'].isna()]
-        _df['Incident #'] = _df['Incident #'].astype(str)
-        _df['Violated'] = _df['Incident #'].str.contains('\*\*')==True
-        _df['Incident #'] = _df['Incident #'].str.extract('(\d+)')
+        try:
+            elm_td = self.browser.find_element_by_id('dataGrid_toppager_center')
+            pages = int(elm_td.find_element_by_id('sp_1_dataGrid_toppager').text)
+        except:
+            pages = 1
 
-        return _df
+        df = pd.DataFrame()
+        for i in range(pages):
+            self.wait.until(EC.visibility_of_element_located((By.ID, 'dataGrid')))
+            table = self.browser.find_element_by_id('dataGrid')
+            _df = pd.read_html(table.get_attribute("outerHTML"))[0]
+            _df.drop(_df.columns[0], axis=1, inplace=True)
+            _df = _df[~_df['Change Order #'].isna()]
+            _df['Change Order #'] = _df['Change Order #'].astype(str)
+            _df['Violated'] = _df['Change Order #'].str.contains('\*\*')==True
+            _df['Change Order #'] = _df['Change Order #'].str.extract('(\d+)')
+            df = df.append(_df)
+
+            if(pages > 1):
+                elm = self.browser.find_element_by_id('dataGrid_toppager_center').find_element_by_id('next_t_dataGrid_toppager')
+                if('ui-state-disabled' not in elm.get_attribute('class').split()):
+                    elm.click()
+                else:
+                    break
+
+        return df
 
     def search_CO(self, ticket_num):
         self._select_ticket_type_gobtn("Change Order")
