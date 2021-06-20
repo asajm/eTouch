@@ -131,25 +131,79 @@ class eTouch_Workflow(eTouch):
 
     def get_workflow_list(self):
         self._open_frame__cai_main()
-        df = pd.read_html(self.browser.page_source)[12]
+        try:
+            elm_td = self.browser.find_element_by_id('dataGrid_toppager_center')
+            pages = int(elm_td.find_element_by_id('sp_1_dataGrid_toppager').text)
+        except:
+            pages = 1
+
+        df = pd.DataFrame()
+        for i in range(pages):
+            self.wait.until(EC.visibility_of_element_located((By.ID, 'dataGrid')))
+            table = self.browser.find_element_by_id('dataGrid')
+            _df = pd.read_html(table.get_attribute("outerHTML"))[0]
+            _df = _df[~_df['Change #'].isna()]
+            _df['Change #'] = _df['Change #'].astype(str)
+            _df['Violated'] = _df['Change #'].str.contains('\*\*')==True
+            _df['Change #'] = _df['Change #'].str.extract('(\d+)')
+            df = df.append(_df)
+
+            if(pages > 1):
+                elm = self.browser.find_element_by_id('dataGrid_toppager_center').find_element_by_id('next_t_dataGrid_toppager')
+                if('ui-state-disabled' not in elm.get_attribute('class').split()):
+                    elm.click()
+                else:
+                    break
+        
         df = df[~df['Change #'].isna()]
         df['Change #'] = df['Change #'].astype(int)
-
         return df['Change #'].tolist()
+
         
     def get_free_workflow_list(self):
         self._open_frame__cai_main()
-        df = pd.read_html(self.browser.page_source)[12]
+        try:
+            elm_td = self.browser.find_element_by_id('dataGrid_toppager_center')
+            pages = int(elm_td.find_element_by_id('sp_1_dataGrid_toppager').text)
+        except:
+            pages = 1
+
+        df = pd.DataFrame()
+        for i in range(pages):
+            self.wait.until(EC.visibility_of_element_located((By.ID, 'dataGrid')))
+            table = self.browser.find_element_by_id('dataGrid')
+            _df = pd.read_html(table.get_attribute("outerHTML"))[0]
+            _df = _df[~_df['Change #'].isna()]
+            _df['Change #'] = _df['Change #'].astype(str)
+            _df['Violated'] = _df['Change #'].str.contains('\*\*')==True
+            _df['Change #'] = _df['Change #'].str.extract('(\d+)')
+            df = df.append(_df)
+
+            if(pages > 1):
+                elm = self.browser.find_element_by_id('dataGrid_toppager_center').find_element_by_id('next_t_dataGrid_toppager')
+                if('ui-state-disabled' not in elm.get_attribute('class').split()):
+                    elm.click()
+                else:
+                    break
+        
         df = df[~df['Change #'].isna()]
         df['Change #'] = df['Change #'].astype(int)
-        
         return df[df['Assignee'].isna()]['Change #'].tolist()
+
 
     def open_workflow(self, CO):
         self._open_frame__cai_main()
-        self.wait.until(EC.visibility_of_element_located( (By.XPATH, "//td[@title='{}']".format(CO)) ))
+
+        try:
+            self.browser.find_element_by_id('top_view_all').click()
+            self._open_frame__cai_main()
+        except:
+            pass
+
+        _xpath = "//td[@title='{}']".format(CO)
+        self.wait.until(EC.visibility_of_element_located( (By.XPATH, _xpath) ))
         
-        self.browser.find_element_by_xpath( "//td[@title='{}']".format(CO)).find_element_by_tag_name('a').click()
+        self.browser.find_element_by_xpath(_xpath).find_element_by_tag_name('a').click()
         
         self.wait.until(EC.number_of_windows_to_be(2))
         self.browser.switch_to.window(self.browser.window_handles[len(self.browser.window_handles)-1])
